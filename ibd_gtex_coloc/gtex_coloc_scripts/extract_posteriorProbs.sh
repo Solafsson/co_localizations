@@ -1,10 +1,11 @@
 #!/bin/bash
 
+## Note: The geneKeyName has to be created manually. You would run extract_coloc_sumstats, look at your genes in the
+##       all_coloc_hits.txt file and create this list by googling the gene IDs before running this script.
 
-
-results_dir=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/results/
-geneList=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/for_locusZoom/all_coloc_hits.txt
-geneKeyName=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/for_locusZoom_backup/geneNameKey.txt
+results_dir=/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/results_long_window/
+geneList=/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/for_locusZoom_long_window/all_coloc_hits.txt
+geneKeyName=/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/for_locusZoom_long_window/geneNameKey.txt
 
 
 ## Extract the posterior probabilities for each gene

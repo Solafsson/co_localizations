@@ -43,13 +43,22 @@ if (length(args)<1) {
 
 
 #load coloc library and its dependencies
-library(colorspace,lib="/software/team152/Rpackages/")
-library(leaps,lib="/software/team152/Rpackages/")
-library(robustbase,lib="/software/team152/Rpackages/")
-library(inline,lib="/software/team152/Rpackages/")
-library(rrcov,lib="/software/team152/Rpackages/")
-library(BMA,lib="/software/team152/Rpackages/")
-library(coloc,lib="/software/team152/Rpackages/")
+#library(colorspace,lib="/software/team152/Rpackages/")
+#library(leaps,lib="/software/team152/Rpackages/")
+#library(robustbase,lib="/software/team152/Rpackages/")
+#library(inline,lib="/software/team152/Rpackages/")
+#library(rrcov,lib="/software/team152/Rpackages/")
+#library(BMA,lib="/software/team152/Rpackages/")
+#library(coloc,lib="/software/team152/Rpackages/")
+
+
+library(colorspace)
+library(leaps)
+library(robustbase)
+library(inline)
+library(rrcov)
+library(BMA)
+library(coloc)
 
 case_prop=NULL
 if( tolower(trait)=="uc"){case_prop=0.354}else
@@ -61,10 +70,14 @@ if( tolower(trait)=="uc"){case_prop=0.354}else
 ##firstly, let's get in the list of GWAS loci
 ibd_gwas = read.table("/lustre/scratch115/projects/coloc_and_fm/IBD_regions_from_our_2017_paper.txt",head=T,sep="\t") #here we save this data into a variable we decided to call ibd_gwas
 
+
+
 ## File paths:
 ibd_sumstats_path="/lustre/scratch115/projects/coloc_and_fm/splitfiles/ibd_summary_stats/"
-gtex_sumstats_path="/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/"
-output_dir="/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/results/"
+gtex_sumstats_path="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/"
+output_dir="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/results_long_window/"
+hard_window_size=500000
+use_hard_windw=TRUE
 #tissue="Colon_Transverse"
 
 
@@ -97,8 +110,16 @@ for(chrom in 1:22) {
   snpList <- subset(ibd_gwas, Chr==chrom)
   
   for(i in 1:nrow(snpList)) {
-    region_start <- snpList[i, 4]
-    region_end <- snpList[i, 5]
+    if(use_hard_windw) {
+      pos <- snpList[i, 2]
+      region_start <- pos - hard_window_size
+      if(region_start < 0) region_start <- 0
+      region_end <- pos + hard_window_size
+    } else {
+      region_start <- snpList[i, 4]
+      region_end <- snpList[i, 5]
+    }
+
     rsID <- as.character(snpList[i,3])
     
     ibd_subset <- subset(ibd_gwas_data, Chr==chrom & Position >= region_start & Position <= region_end)
