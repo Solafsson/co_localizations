@@ -58,7 +58,7 @@ function join_with_ibd_sumstats {
 
     by_chr_gtex_path=${working_dir}${tissue}/
 
-    join -1 2 -2 2 <(sort -k2,2 ${ibd_assoc_path}${ibd_subtype}_b37*Chr_${CHR}.ready ) \
+    join -1 2 -2 2 <(sort -k2,2 ${ibd_assoc_path}${ibd_subtype}_*Chr_${CHR}* ) \
     <( sort -k2,2 ${by_chr_gtex_path}chr${CHR}_${tissue} ) | \
     awk 'BEGIN {print "SNP ibd_eff_All ibd_other_All ibd_beta expr_eff_All expr_other_All expr_beta \
     ibd_maf expr_maf CHR BP ibd_se expr_se ibd_P expr_P ibd_N expr_N geneID"} {print $3, toupper($8), toupper($7), $5, \
