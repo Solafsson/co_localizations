@@ -71,7 +71,6 @@ if( tolower(trait)=="uc"){case_prop=0.354}else
 ibd_gwas = read.table("/lustre/scratch115/projects/coloc_and_fm/IBD_regions_from_our_2017_paper.txt",head=T,sep="\t") #here we save this data into a variable we decided to call ibd_gwas
 
 
-
 ## File paths:
 ibd_sumstats_path="/lustre/scratch115/projects/coloc_and_fm/splitfiles/ibd_summary_stats/"
 gtex_sumstats_path="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/"

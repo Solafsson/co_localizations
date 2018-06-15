@@ -78,6 +78,7 @@ function match_effect_allele {
     ibd_subtype=$( awk -v jI="$jobIndex" 'NR==jI {print $1; exit}' < ${jobFile} )
     CHR=$( awk -v jI="$jobIndex" 'NR==jI {print $2; exit}' < ${jobFile} )
     tissue=$( awk -v jI="$jobIndex" 'NR==jI {print $3; exit}' < ${jobFile} | cut -f 1 -d "." )
+    sampleSize=$( awk -v jI="$jobIndex" 'NR==jI {print $4; exit}' < ${jobFile} | cut -f 1 -d "." )
 
     by_chr_gtex_path=${working_dir}${tissue}/
 
@@ -87,13 +88,9 @@ function match_effect_allele {
     awk '{print $13, $15, $7, $5, $11, $1, $16, $8, $9}' < ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}.effect_alleleMatched > \
     ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_forColoc.txt
 
-    if [ "$tissue" == "Small_Intestine_Terminal_Ileum" ]; then
-        sed -i 's/b37/122/g' ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_forColoc.txt
-    elif [ "$tissue" == "Colon_Transverse" ]; then
-        sed -i 's/b37/246/g' ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_forColoc.txt
-    else
-        sed -i 's/b37/203/g' ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_forColoc.txt
-    fi
+
+    sed -i "s/b37/${sampleSize}/g" ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_forColoc.txt
+
 }
 
 function coloc {

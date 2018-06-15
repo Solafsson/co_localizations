@@ -2,35 +2,44 @@
 
 ## Usage: This is a wrapper script for the processing of GTEX data that needs to be done before I can do colocalization
 ##        analysis of IBD SNPs and epithelial eQTLs. Done as part of my rotation with Carl.
+##        processGTexData.sh <GtexTrait_list> <diseaseList>
 
+## Input: GtexTrait_list is a two column text file without a header that gives the name of a GTex file (found under
+##        the gtex_path) in the first column, and the sample size in the second column.
+##        diseaseList is a two column text file without a header that gives the name of a disease in the first column
+##        and the case-fraction in the second column. It's important that the name of the disease matches the prefix
+##        of the summary statistics files.
+##        Expect the summary statistics files to match the regular expression: <disease>_b37*Chr_${CHR}.ready
+
+##        example: GtexTrait_list:
+#           Colon_Sigmoid.allpairs.txt.gz 203
+#           Colon_Transverse.allpairs.txt.gz 246
+#         example: diseaseList:
+#            uc 0.354
+#            cd 0.349
+
+GtexTrait_list=$1
+diseaseList=$2
 
 gtex_path=/lustre/scratch115/resources/GTEx/AnalysisV7/GTEx_Analysis_v7_eQTL_all_associations/
 ibd_assoc_path=/lustre/scratch115/projects/coloc_and_fm/splitfiles/ibd_summary_stats/
 working_dir=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/
 script_dir=/nfs/users/nfs_s/so11/rotations/andersonLab/scripts/gtex_coloc_scripts/
 
-rm -f ${working_dir}traitList.txt
-echo "Colon_Sigmoid.allpairs.txt.gz 203" >> ${working_dir}traitList.txt
-echo "Colon_Transverse.allpairs.txt.gz 246" >> ${working_dir}traitList.txt
-#echo "Esophagus_Gastroesophageal_Junction.allpairs.txt.gz" >> ${working_dir}traitList.txt
-#echo "Esophagus_Mucosa.allpairs.txt.gz" >> ${working_dir}traitList.txt
-#echo "Skin_Not_Sun_Exposed_Suprapubic.allpairs.txt.gz" >> ${working_dir}traitList.txt
-echo "Small_Intestine_Terminal_Ileum.allpairs.txt.gz 122" >> ${working_dir}traitList.txt
-
 
 mkdir -p ${working_dir}cluster_output_files
 clusterErrorOutput=${working_dir}cluster_output_files/
-nrTissues=$( wc -l ${working_dir}traitList.txt | awk '{print $1}' )
+nrTissues=$( wc -l ${GtexTrait_list} | awk '{print $1}' )
 
 bsub  -J"copy_and_unzip[1-${nrTissues}]" -W 60 -M100 -R'span[hosts=1] select[mem>100] rusage[mem=100]' \
 -e ${clusterErrorOutput}copy_and_unzip_errors.%J.%I -o ${clusterErrorOutput}copy_and_unzip_output.%J.%I \
-bash ${script_dir}processGTexData_wrapper.sh ${script_dir}processGTexData_worker.sh copy_and_unzip ${working_dir}traitList.txt \
-${gtex_path} ${ibd_assoc_path} ${working_dir} ${working_dir}traitList.txt
+bash ${script_dir}processGTexData_wrapper.sh ${script_dir}processGTexData_worker.sh copy_and_unzip ${GtexTrait_list} \
+${gtex_path} ${ibd_assoc_path} ${working_dir} ${GtexTrait_list}
 
 
 
 # Remove .gz from tissue name
-sed 's/\.gz//g' ${working_dir}traitList.txt > ${working_dir}traitList2.txt
+sed 's/\.gz//g' ${GtexTrait_list} > ${working_dir}traitList2.txt
 
 
 ## Divide files up by chromosomes
@@ -49,14 +58,15 @@ while read tissue sampleSize; do
 
     tissueName=$( echo ${tissue} | cut -f 1 -d "." )
     for i in {1..22}; do
-        echo "cd ${i} ${tissueName}" >> ${working_dir}join_match_jobFile.txt
-        echo "uc ${i} ${tissueName}" >> ${working_dir}join_match_jobFile.txt
+        while read disease caseFrac; do
+            echo "${disease} ${i} ${tissueName} ${sampleSize}" >> ${working_dir}join_match_jobFile.txt
+        done < ${diseaseList}
     done
 
     # No IBD associations on the X chromosome?
     #echo "cd X ${tissueName}" >> ${working_dir}join_match_jobFile.txt
     #echo "uc X ${tissueName}" >> ${working_dir}join_match_jobFile.txt
-done < ${working_dir}traitList.txt
+done < ${GtexTrait_list}
 
 nrJoinMatchJobs=$( wc -l ${working_dir}join_match_jobFile.txt | awk '{print $1}' )
 
@@ -72,7 +82,7 @@ while read tissue sampleSize; do
     tissueName=$( echo ${tissue} | cut -f 1 -d "." )
     echo "${tissueName} ${sampleSize} cd" >> ${working_dir}coloc_jobFile.txt
     echo "${tissueName} ${sampleSize} uc" >> ${working_dir}coloc_jobFile.txt
-done < ${working_dir}traitList.txt
+done < ${GtexTrait_list}
 nrColocJobs=$( wc -l ${working_dir}coloc_jobFile.txt | awk '{print $1}' )
 
 ## Run the colocalization
