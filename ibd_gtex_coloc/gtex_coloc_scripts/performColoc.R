@@ -1,10 +1,13 @@
 
 # Usage: This script carries out co-localization between cd/uc and gene expression data from GTex.
-#        Rscript performColoc.R <IBD subtype> <Tissue> 
+#        Rscript performColoc.R <IBD subtype> <Tissue> <case proportion>
 #
-# Input: IBD subtype should be either cd or uc. Tissue should be a GTex tissue name like "Colon_Transverse"
+# Input: Tissue should be a GTex tissue name like "Colon_Transverse"
 #        There are some hard-coded paths in this script, ibd_gwas, ibd_sumstats_path, gtex_sumstats_path and output_dir
-#        These could be read in as arguments, but that is not implemented yet. 
+#        These could be read in as arguments, but that is not implemented yet.
+#        case proportion refers to the fraction of the sample size that are cases in the IBD subtype.
+#        There should be summary statistic files matching the regular expression <ibd_subtype>_*Chr_<Chr>.*ready
+#        under the ibd_sumstats_path
 
 # Output: A file titled <IBD_subtype>_<Tissue>_colocalization.txt is written to the output directory. This file contains
 #        the columns "Trait1", "Trait2", "Top_SNP_Trait1","n_snps","H0","H1","H2","H3","H4" where
@@ -34,11 +37,12 @@ args = commandArgs(trailingOnly=TRUE)
 if (length(args)<1) {
   trait="cd"
   Tissue="Colon_Transverse"
+  case_prop=0.349
   print("No argument supplied, co-localizing with CD as default", call.=FALSE)
 } else {
   trait=args[1] #here this is UC or CD
   tissue=args[2]
-  #functional_assay=args[2]
+  case_prop=as.numeric(args[3])
 }
 
 
@@ -60,11 +64,11 @@ library(rrcov)
 library(BMA)
 library(coloc)
 
-case_prop=NULL
-if( tolower(trait)=="uc"){case_prop=0.354}else
-  if(tolower(trait)=="cd"){
-    case_prop=0.349 
-  }
+#case_prop=NULL
+#if( tolower(trait)=="uc"){case_prop=0.354}else
+#  if(tolower(trait)=="cd"){
+#    case_prop=0.349
+#  }
 
 
 ##firstly, let's get in the list of GWAS loci
@@ -73,11 +77,11 @@ ibd_gwas = read.table("/lustre/scratch115/projects/coloc_and_fm/IBD_regions_from
 
 ## File paths:
 ibd_sumstats_path="/lustre/scratch115/projects/coloc_and_fm/splitfiles/ibd_summary_stats/"
-gtex_sumstats_path="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/"
-output_dir="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/results_long_window/"
+#gtex_sumstats_path="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/"
+gtex_sumstats_path="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/testing_forLiz"
+output_dir="/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/testing_forLiz/results/"
 hard_window_size=500000
 use_hard_windw=TRUE
-#tissue="Colon_Transverse"
 
 
 coloc_results=matrix(ncol=9,nrow=1,0)
@@ -87,15 +91,16 @@ colnames(coloc_results)=c("Trait1", "Trait2", "Top_SNP_Trait1","n_snps","H0","H1
 for(chrom in 1:22) {
 
   print(paste("Testing Chr", chrom))
-  #Read in ibd GWAS summary statistics
-  ibd_gwas_data=NULL
-  if( tolower(trait)=="uc"){
-    ibd_gwas_data=read.table(paste(ibd_sumstats_path, "uc_b37_45975.Chr_",chrom,".ready",sep=""),head=T,sep="\t")
-  } else if(tolower(trait)=="cd"){
-      ibd_gwas_data=read.table(paste(ibd_sumstats_path, "cd_b37_40266.Chr_",chrom,".ready",sep=""),head=T,sep="\t")
-  } else {
-    stop("Error: Did not recognize the specified trait.")
+
+  snpList <- subset(ibd_gwas, Chr==chrom)
+  if(nrow(snpList)==0) {
+    next   # Skip to next chromosome if no hits on the current chromosome
   }
+
+  #Read in GWAS summary statistics
+  ibd_gwas_data=NULL
+  ibd_gwas_data=read.table(paste(ibd_sumstats_path, list.files(path=ibd_sumstats_path, pattern=glob2rx(paste(trait, "_*Chr_", chrom ,".*ready", sep=""))),sep=""),head=T,sep="\t")
+
 
   
   gtex_gwas_data <- read.table(paste(gtex_sumstats_path, "/", tissue, "/", trait,  "_chr", chrom, "_", tissue, "_forColoc.txt", sep=""), h=T)
@@ -105,8 +110,6 @@ for(chrom in 1:22) {
   # Remove missing entries
   gtex_gwas_data <- subset(gtex_gwas_data, !is.na(expr_var) & !is.na(expr_P) & !is.na(expr_beta))
   ibd_gwas_data <- subset(ibd_gwas_data, !is.na(Var) & !is.na(Pvalue) & !is.na(Effect))
-  
-  snpList <- subset(ibd_gwas, Chr==chrom)
   
   for(i in 1:nrow(snpList)) {
     if(use_hard_windw) {

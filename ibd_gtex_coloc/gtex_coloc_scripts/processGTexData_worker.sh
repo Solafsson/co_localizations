@@ -8,6 +8,8 @@ working_dir=$5
 jobFile=$6
 jobIndex=$7
 
+script_dir=/nfs/users/nfs_s/so11/phd/co_localizations/ibd_gtex_coloc/gtex_coloc_scripts/
+
 
 indexTissue=$( awk -v jI="$jobIndex" 'NR==jI {print $1; exit}' < ${traitList} )
 indexTissue_N=$( awk -v jI="$jobIndex" 'NR==jI {print $2; exit}' < ${traitList} )
@@ -82,7 +84,7 @@ function match_effect_allele {
 
     by_chr_gtex_path=${working_dir}${tissue}/
 
-    /nfs/users/nfs_s/so11/rotations/andersonLab/scripts/gtex_coloc_scripts/match_effect_allele.sh ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_formatching.txt \
+    ${script_dir}match_effect_allele.sh ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}_formatching.txt \
     ${effectType} ${frq_incl} ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}
 
     awk '{print $13, $15, $7, $5, $11, $1, $16, $8, $9}' < ${by_chr_gtex_path}${ibd_subtype}_chr${CHR}_${tissue}.effect_alleleMatched > \
@@ -100,9 +102,10 @@ function coloc {
 
     ibd_subtype=$( awk -v jI="$jobIndex" 'NR==jI {print $3; exit}' < ${jobFile} )
     tissue=$( awk -v jI="$jobIndex" 'NR==jI {print $1; exit}' < ${jobFile} | cut -f 1 -d "." )
+    caseFrac=$( awk -v jI="$jobIndex" 'NR==jI {print $4; exit}' < ${jobFile} )
 
 
-    /software/R-3.3.0/bin/Rscript /nfs/users/nfs_s/so11/rotations/andersonLab/scripts/gtex_coloc_scripts/performColoc.R ${ibd_subtype} ${tissue}
+    /software/R-3.3.0/bin/Rscript ${script_dir}performColoc.R ${ibd_subtype} ${tissue} ${caseFrac}
 
 }
 if [ "$run_function" == "copy_and_unzip" ]; then

@@ -23,8 +23,9 @@ diseaseList=$2
 
 gtex_path=/lustre/scratch115/resources/GTEx/AnalysisV7/GTEx_Analysis_v7_eQTL_all_associations/
 ibd_assoc_path=/lustre/scratch115/projects/coloc_and_fm/splitfiles/ibd_summary_stats/
-working_dir=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/
-script_dir=/nfs/users/nfs_s/so11/rotations/andersonLab/scripts/gtex_coloc_scripts/
+#working_dir=/lustre/scratch113/teams/anderson/users/so11/gtex_coloc/
+working_dir=/lustre/scratch119/humgen/teams/anderson/users/so11/co_localizations/ibd_gtex_coloc/testing_forLiz/
+script_dir=/nfs/users/nfs_s/so11/phd/co_localizations/ibd_gtex_coloc/gtex_coloc_scripts/
 
 
 mkdir -p ${working_dir}cluster_output_files
@@ -80,13 +81,14 @@ ${gtex_path} ${ibd_assoc_path} ${working_dir} ${working_dir}join_match_jobFile.t
 rm -f ${working_dir}coloc_jobFile.txt
 while read tissue sampleSize; do
     tissueName=$( echo ${tissue} | cut -f 1 -d "." )
-    echo "${tissueName} ${sampleSize} cd" >> ${working_dir}coloc_jobFile.txt
-    echo "${tissueName} ${sampleSize} uc" >> ${working_dir}coloc_jobFile.txt
+    while read disease caseFrac; do
+        echo "${tissueName} ${sampleSize} ${disease} ${caseFrac}" >> ${working_dir}coloc_jobFile.txt
+    done < ${diseaseList}
 done < ${GtexTrait_list}
 nrColocJobs=$( wc -l ${working_dir}coloc_jobFile.txt | awk '{print $1}' )
 
 ## Run the colocalization
-bsub -w 'done("join_and_match")' -J"perform_coloc[1-${nrColocJobs}]" -W 240 -M1000 -R'span[hosts=1] select[mem>1000] rusage[mem=1000]' \
+bsub -w 'done("join_and_match")' -J"perform_coloc[1-${nrColocJobs}]" -W 240 -M5000 -R'span[hosts=1] select[mem>5000] rusage[mem=5000]' \
 -e ${clusterErrorOutput}perform_coloc_errors.%J.%I -o ${clusterErrorOutput}perform_coloc_output.%J.%I \
 bash ${script_dir}processGTexData_wrapper.sh ${script_dir}processGTexData_worker.sh coloc ${working_dir}traitList2.txt \
 ${gtex_path} ${ibd_assoc_path} ${working_dir} ${working_dir}coloc_jobFile.txt
